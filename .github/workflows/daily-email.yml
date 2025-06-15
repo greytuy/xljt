@@ -3,9 +3,12 @@
 name: Daily Inspirational Email
 
 on:
+  #添加push触发
+  push:
+    branches:
+      - main
   # 允许手动在 Actions 标签页触发此工作流，方便测试
   workflow_dispatch:
-
   # 设置定时任务
   schedule:
     # cron 表达式使用 UTC 时间。'0 1 * * *' 对应 UTC 时间的 01:00，
