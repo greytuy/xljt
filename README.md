@@ -17,7 +17,7 @@
 
 ### 2. 在 GitHub 仓库中设置 Secrets
 
-为了让 Action 正常工作，您需要在您的 GitHub 仓库中设置以下 Secrets。请进入 `Settings` -> `Secrets and variables` -> `Actions` 页面，并点击 `New repository secret` 添加以下三个 Secrets：
+为了让 Action 正常工作，您需要在您的 GitHub 仓库中设置以下 Secrets。请进入 `Settings` -> `Secrets and variables` -> `Actions` 页面，并点击 `New repository secret` 添加以下 Secrets：
 
 -   **`AI_CONFIG`**:
     一个 JSON 字符串，包含了调用 AI 服务所需的信息。
@@ -30,13 +30,13 @@
     一个 JSON 字符串，包含了邮件发件人服务器（SMTP）的配置。
 
     ```json
-    {"host": "smtp.example.com", "port": 465, "secure": true, "auth": {"user": "sender@example.com", "pass": "YOUR_EMAIL_PASSWORD"}}
+    {"host": "smtp.example.com", "port": 465, "secure": true, "auth": {"user": "your-login-email@example.com", "pass": "YOUR_EMAIL_APP_PASSWORD"}}
     ```
     *   `host`: 您的 SMTP 服务器地址。
     *   `port`: SMTP 服务器端口（通常 `465` 用于 SSL，`587` 用于 TLS）。
     *   `secure`: 如果端口是 `465`，此项应为 `true`。
-    *   `auth.user`: 您的发件邮箱地址。
-    *   `auth.pass`: 您的邮箱密码或应用专用密码。
+    *   `auth.user`: 您用于**登录**邮件服务器的邮箱地址。
+    *   `auth.pass`: **重要**：这里应填写您邮箱服务商生成的**授权码 (App Password)**，而不是您的邮箱登录密码。
 
 -   **`RECIPIENT_EMAIL`**:
     收件人的电子邮件地址。
@@ -44,6 +44,21 @@
     ```
     recipient@example.com
     ```
+
+-   **`SENDER_EMAIL` (可选)**:
+    您希望在邮件中显示的**发件人邮箱地址**。如果不设置，将默认使用 `MAIL_CONFIG` 中的 `auth.user`。
+
+    ```
+    sender@example.com
+    ```
+
+-   **`SENDER_NAME` (可选)**:
+    您希望在邮件中显示的**发件人名称**。如果不设置，将默认使用发件人邮箱地址的前缀。
+
+    ```
+    My Awesome Project
+    ```
+
 
 ### 3. （可选）自定义触发时间
 
@@ -63,6 +78,8 @@ on:
 
 如果您希望在本地运行此脚本进行测试，请创建一个 `.env` 文件，并配置以下环境变量。
 
+> **注意**: 本地测试时，请将 JSON 配置写在一行，或者使用能够处理多行环境变量的工具（如 `dotenv`）。
+
 -   **`AI_CONFIG`**:
     一个 JSON 字符串，包含了调用 AI 服务所需的信息。
 
@@ -74,7 +91,7 @@ on:
     一个 JSON 字符串，包含了邮件发件人服务器（SMTP）的配置。
 
     ```json
-    {"host": "smtp.example.com", "port": 465, "secure": true, "auth": {"user": "sender@example.com", "pass": "YOUR_EMAIL_PASSWORD"}}
+    {"host": "smtp.example.com", "port": 465, "secure": true, "auth": {"user": "your-login-email@example.com", "pass": "YOUR_EMAIL_APP_PASSWORD"}}
     ```
 
 -   **`RECIPIENT_EMAIL`**:
@@ -83,3 +100,9 @@ on:
     ```
     recipient@example.com
     ```
+
+-   **`SENDER_EMAIL` (可选)**:
+    发件人邮箱地址。
+
+-   **`SENDER_NAME` (可选)**:
+    发件人名称。

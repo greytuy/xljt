@@ -5,6 +5,8 @@ const nodemailer = require('nodemailer');
 const aiConfigStr = process.env.AI_CONFIG;
 const mailConfigStr = process.env.MAIL_CONFIG;
 const recipientEmail = process.env.RECIPIENT_EMAIL;
+const senderEmail = process.env.SENDER_EMAIL;
+const senderName = process.env.SENDER_NAME;
 
 // 校验 AI_CONFIG
 if (!aiConfigStr) {
@@ -85,8 +87,12 @@ async function getInspirationalQuote() {
 async function sendEmail(content) {
     const transporter = nodemailer.createTransport(mailConfig);
 
+    // 确定发件人地址和名称
+    const fromEmail = senderEmail || mailConfig.auth.user;
+    const fromName = senderName || fromEmail.split('@')[0];
+
     const mailOptions = {
-        from: `"${mailConfig.auth.user}" <${mailConfig.auth.user}>`,
+        from: `"${fromName}" <${fromEmail}>`,
         to: recipientEmail,
         subject: '今日份的心灵鸡汤请查收 ✨',
         html: `

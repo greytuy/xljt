@@ -46,4 +46,6 @@ jobs:
           AI_CONFIG: ${{ secrets.AI_CONFIG }}
           MAIL_CONFIG: ${{ secrets.MAIL_CONFIG }}
           RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SENDER_NAME: ${{ secrets.SENDER_NAME }}
         run: node send-email.js
