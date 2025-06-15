@@ -5,8 +5,6 @@ const nodemailer = require('nodemailer');
 const aiConfigStr = process.env.AI_CONFIG;
 const mailConfigStr = process.env.MAIL_CONFIG;
 const recipientEmail = process.env.RECIPIENT_EMAIL;
-const senderEmail = process.env.SENDER_EMAIL;
-const senderName = process.env.SENDER_NAME;
 
 // 校验 AI_CONFIG
 if (!aiConfigStr) {
@@ -87,9 +85,9 @@ async function getInspirationalQuote() {
 async function sendEmail(content) {
     const transporter = nodemailer.createTransport(mailConfig);
 
-    // 确定发件人地址和名称
-    const fromEmail = senderEmail || mailConfig.auth.user;
-    const fromName = senderName || fromEmail.split('@')[0];
+    // 从 mailConfig 中确定发件人信息，如果未提供 sender，则回退到 auth.user
+    const fromEmail = mailConfig.sender?.email || mailConfig.auth.user;
+    const fromName = mailConfig.sender?.name || fromEmail.split('@')[0];
 
     const mailOptions = {
         from: `"${fromName}" <${fromEmail}>`,

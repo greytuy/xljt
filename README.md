@@ -30,33 +30,33 @@
     一个 JSON 字符串，包含了邮件发件人服务器（SMTP）的配置。
 
     ```json
-    {"host": "smtp.example.com", "port": 465, "secure": true, "auth": {"user": "your-login-email@example.com", "pass": "YOUR_EMAIL_APP_PASSWORD"}}
+    {
+      "host": "smtp.example.com",
+      "port": 587,
+      "secure": false,
+      "auth": {
+        "user": "your-login-email@example.com",
+        "pass": "YOUR_EMAIL_APP_PASSWORD"
+      },
+      "sender": {
+        "email": "sender@example.com",
+        "name": "My Awesome Project"
+      }
+    }
     ```
     *   `host`: 您的 SMTP 服务器地址。
     *   `port`: SMTP 服务器端口（通常 `465` 用于 SSL，`587` 用于 TLS）。
-    *   `secure`: 如果端口是 `465`，此项应为 `true`。
+    *   `secure`: 如果端口是 `465`，此项应为 `true`；如果是 `587`，此项应为 `false`。
     *   `auth.user`: 您用于**登录**邮件服务器的邮箱地址。
     *   `auth.pass`: **重要**：这里应填写您邮箱服务商生成的**授权码 (App Password)**，而不是您的邮箱登录密码。
+    *   `sender.email` (可选): 您希望在邮件中显示的**发件人邮箱地址**。如果不设置，将默认使用 `auth.user`。
+    *   `sender.name` (可选): 您希望在邮件中显示的**发件人名称**。如果不设置，将默认使用发件人邮箱地址的前缀。
 
 -   **`RECIPIENT_EMAIL`**:
     收件人的电子邮件地址。
 
     ```
     recipient@example.com
-    ```
-
--   **`SENDER_EMAIL` (可选)**:
-    您希望在邮件中显示的**发件人邮箱地址**。如果不设置，将默认使用 `MAIL_CONFIG` 中的 `auth.user`。
-
-    ```
-    sender@example.com
-    ```
-
--   **`SENDER_NAME` (可选)**:
-    您希望在邮件中显示的**发件人名称**。如果不设置，将默认使用发件人邮箱地址的前缀。
-
-    ```
-    My Awesome Project
     ```
 
 
@@ -91,7 +91,19 @@ on:
     一个 JSON 字符串，包含了邮件发件人服务器（SMTP）的配置。
 
     ```json
-    {"host": "smtp.example.com", "port": 465, "secure": true, "auth": {"user": "your-login-email@example.com", "pass": "YOUR_EMAIL_APP_PASSWORD"}}
+    {
+      "host": "smtp.example.com",
+      "port": 587,
+      "secure": false,
+      "auth": {
+        "user": "your-login-email@example.com",
+        "pass": "YOUR_EMAIL_APP_PASSWORD"
+      },
+      "sender": {
+        "email": "sender@example.com",
+        "name": "My Awesome Project"
+      }
+    }
     ```
 
 -   **`RECIPIENT_EMAIL`**:
@@ -100,9 +112,3 @@ on:
     ```
     recipient@example.com
     ```
-
--   **`SENDER_EMAIL` (可选)**:
-    发件人邮箱地址。
-
--   **`SENDER_NAME` (可选)**:
-    发件人名称。
