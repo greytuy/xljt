@@ -6,23 +6,23 @@ const aiConfigStr = process.env.AI_CONFIG;
 const mailConfigStr = process.env.MAIL_CONFIG;
 const recipientEmail = process.env.RECIPIENT_EMAIL;
 const recipientEmails = process.env.RECIPIENT_EMAILS;
-const debugMode = process.env.DEBUG === 'false'; // 添加debug开关
+const debugMode = process.env.DEBUG === 'true'; // 添加debug开关
 
-// 安全日志函数 - 隐藏敏感信息
+// 安全日志函数（默认静默）。仅在非调试模式下输出已脱敏信息
 function safeLog(message, ...args) {
     if (debugMode) {
-        console.log(message, ...args);
-    } else {
-        // 在非debug模式下，隐藏敏感信息
-        const safeMessage = message.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[邮箱已隐藏]');
-        const safeArgs = args.map(arg => {
-            if (typeof arg === 'string') {
-                return arg.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[邮箱已隐藏]');
-            }
-            return arg;
-        });
-        console.log(safeMessage, ...safeArgs);
+        // 调试模式下不输出详细信息，保持终端简洁
+        return;
     }
+    // 在非 debug 模式下输出已脱敏日志
+    const safeMessage = message.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[邮箱已隐藏]');
+    const safeArgs = args.map(arg => {
+        if (typeof arg === 'string') {
+            return arg.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[邮箱已隐藏]');
+        }
+        return arg;
+    });
+    console.log(safeMessage, ...safeArgs);
 }
 
 // 进度日志函数 - 始终显示
