@@ -41,7 +41,7 @@ try {
 }
 
 /**
- * 从AI响应中提取实际内容（处理thinking标签和思考过程）
+ * 从AI响应中提取实际内容（处理thinking标签和HTML代码块）
  * @param {string} rawContent AI返回的原始内容
  * @returns {string} 提取后的实际内容
  */
@@ -52,14 +52,22 @@ function extractActualContent(rawContent) {
     
     let content = rawContent.trim();
     
-    // 方法1: 如果包含</think>标签，提取标签后的内容
+    // 优先方法：提取```html ```代码块中的内容
+    const htmlCodeBlockMatch = content.match(/```html\s*([\s\S]*?)\s*```/i);
+    if (htmlCodeBlockMatch && htmlCodeBlockMatch[1]) {
+        const htmlContent = htmlCodeBlockMatch[1].trim();
+        console.log('检测到HTML代码块，提取代码块内容');
+        return htmlContent;
+    }
+    
+    // 备用方法1: 如果包含</think>标签，提取标签后的内容
     const thinkEndMatch = content.match(/<\/think>\s*([\s\S]*?)$/i);
     if (thinkEndMatch && thinkEndMatch[1]) {
         content = thinkEndMatch[1].trim();
         console.log('检测到</think>标签，提取标签后内容');
     }
     
-    // 方法2: 移除所有thinking相关标签及其内容
+    // 备用方法2: 移除所有thinking相关标签及其内容
     content = content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
     content = content.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '').trim();
     content = content.replace(/<thought>[\s\S]*?<\/thought>/gi, '').trim();
@@ -69,7 +77,7 @@ function extractActualContent(rawContent) {
     content = content.replace(/<\/?thinking>/gi, '').trim();
     content = content.replace(/<\/?thought>/gi, '').trim();
     
-    // 方法3: 如果内容以思考过程开头，尝试提取HTML部分
+    // 备用方法3: 如果内容以思考过程开头，尝试提取HTML部分
     if (content.includes('思考过程：') || content.includes('思考：')) {
         // 查找第一个HTML标签的位置
         const htmlMatch = content.match(/<(div|p|h[1-6]|span)[^>]*>/i);
@@ -80,7 +88,7 @@ function extractActualContent(rawContent) {
         }
     }
     
-    // 方法4: 移除常见的思考过程文字段落
+    // 备用方法4: 移除常见的思考过程文字段落
     const thinkingPatterns = [
         /^思考过程：[\s\S]*?(?=<[a-zA-Z])/,
         /^分析：[\s\S]*?(?=<[a-zA-Z])/,
@@ -141,16 +149,12 @@ function isValidHTMLContent(content) {
         return false;
     }
     
-    // 检查是否仍包含未处理的思考标签或思考过程文字
-    const thinkingPatterns = [
-        '<think>', '<thinking>', '<thought>',
-        '思考过程', '思考：', '分析：',
-        '让我想想', '我需要', '我应该'
-    ];
+    // 检查是否仍包含未处理的思考标签（但不检查思考过程文字，因为已经通过代码块提取）
+    const thinkingTags = ['<think>', '<thinking>', '<thought>'];
     
     const lowerContent = trimmedContent.toLowerCase();
-    for (const pattern of thinkingPatterns) {
-        if (lowerContent.includes(pattern.toLowerCase())) {
+    for (const tag of thinkingTags) {
+        if (lowerContent.includes(tag.toLowerCase())) {
             return false;
         }
     }
@@ -167,11 +171,18 @@ function isValidHTMLContent(content) {
         return false;
     }
     
-    // 检查是否看起来像励志内容（包含积极词汇）
-    const positiveWords = ['励志', '积极', '正能量', '美好', '希望', '成功', '努力', '坚持', '梦想', '未来'];
+    // 检查是否看起来像励志内容（包含积极词汇或常见励志表达）
+    const positiveWords = [
+        '励志', '积极', '正能量', '美好', '希望', '成功', '努力', '坚持', '梦想', '未来',
+        '加油', '奋斗', '进步', '成长', '勇气', '信心', '目标', '理想', '拼搏', '向前',
+        '每一天', '新的', '开始', '机会', '挑战', '克服', '相信', '自己', '能力', '实现'
+    ];
     const hasPositiveContent = positiveWords.some(word => trimmedContent.includes(word));
     
-    return hasPositiveContent;
+    // 如果没有找到积极词汇，但内容看起来是完整的HTML结构，也认为是有效的
+    const hasCompleteStructure = trimmedContent.includes('<div') && trimmedContent.includes('</div>');
+    
+    return hasPositiveContent || hasCompleteStructure;
 }
 
 /**
@@ -195,29 +206,33 @@ async function getInspirationalQuote() {
                     messages: [
                         {
                             role: 'system',
-                            content: '你是一个专业的励志内容创作者。你必须只返回纯HTML格式的励志内容，不要包含任何思考过程、解释或其他文字。直接输出可以在邮件中使用的HTML代码。'
+                            content: '你是一个专业的励志内容创作者。你可以在<think></think>标签中进行思考，然后在```html ```代码块中输出最终的HTML代码。'
                         },
                         {
                             role: 'user',
                             content: `请生成一段励志的HTML内容，用于每日邮件发送。
 
-**重要要求：**
-1. 只返回纯HTML代码，不要包含任何思考过程或解释
-2. 不要使用markdown语法，只使用HTML标签
-3. 内容结构应包含：
+你可以在<think></think>标签中思考设计思路，然后在\`\`\`html \`\`\`代码块中输出最终的HTML代码。
+
+要求：
+1. HTML内容应包含：
    - 一个醒目的标题（使用h2或h3标签）
    - 一句核心励志语句（使用strong或em标签强调）
    - 一段简短的解释或鼓励话语（100-200字）
    - 适当的CSS内联样式美化
-4. 使用温暖的颜色搭配和合理的布局
-5. 确保在邮件客户端中显示良好
+2. 使用温暖的颜色搭配和合理的布局
+3. 确保在邮件客户端中显示良好
 
-示例格式（但请生成不同的内容）：
-<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; text-align: center;">
-    <h3 style="margin: 0 0 15px 0;">今日励志</h3>
-    <p style="font-size: 1.2em; font-weight: bold; margin: 0 0 15px 0;">励志语句</p>
-    <p style="opacity: 0.9; margin: 0;">解释文字</p>
-</div>`
+格式示例：
+<think>
+你的思考过程...
+</think>
+
+\`\`\`html
+<div style="...">
+  <!-- 你的HTML内容 -->
+</div>
+\`\`\``
                         }
                     ],
                     max_tokens: 500,
