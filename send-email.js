@@ -341,7 +341,8 @@ async function getInspirationalQuote() {
                     ],
                     max_tokens: 500,
                     temperature: 1.0,
-                    stream: false
+                    // stream: false
+                    stream: true // 启用流式响应
                 },
                 {
                     headers: {
