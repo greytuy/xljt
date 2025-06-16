@@ -19,6 +19,9 @@ jobs:
   send-daily-email:
     # 使用最新的 ubuntu 虚拟机环境
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
 
     steps:
       # 第一步：检出代码
@@ -58,3 +61,5 @@ jobs:
           repository: ${{ github.repository }}
           retain_days: 0
           keep_minimum_runs: 1
+      # - name: Delete workflow runs
+      #   uses: Mattraks/delete-workflow-runs@v2.0.6
