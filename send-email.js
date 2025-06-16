@@ -180,7 +180,7 @@ function isValidHTMLContent(content) {
  */
 async function getInspirationalQuote() {
     // const maxRetries = 3;
-    const maxRetries = 5; //修改最大重试次数为5次
+    const maxRetries = 10; //修改最大重试次数为5次
 
     let lastError = null;
     
