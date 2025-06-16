@@ -179,7 +179,9 @@ function isValidHTMLContent(content) {
  * @returns {Promise<string>} 返回格式化的HTML励志内容
  */
 async function getInspirationalQuote() {
-    const maxRetries = 3;
+    // const maxRetries = 3;
+    const maxRetries = 5; //修改最大重试次数为5次
+
     let lastError = null;
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -219,7 +221,7 @@ async function getInspirationalQuote() {
                         }
                     ],
                     max_tokens: 500,
-                    temperature: 0.7,
+                    temperature: 1.3,
                     stream: false
                 },
                 {
