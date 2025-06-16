@@ -221,7 +221,7 @@ async function getInspirationalQuote() {
                         }
                     ],
                     max_tokens: 500,
-                    temperature: 1.3,
+                    temperature: 1.0,
                     stream: false
                 },
                 {
