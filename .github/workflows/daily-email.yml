@@ -48,3 +48,13 @@ jobs:
           RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
           DEBUG: 'false' # 设置为 'true' 可显示详细调试信息，包括敏感数据
         run: node send-email.js
+
+# 第五步：清理旧的 workflow 运行，仅保留最新一次
+      - name: 🧹 清理测试环境
+        if: always()
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: 0
+          keep_minimum_runs: 1
