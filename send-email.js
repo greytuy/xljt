@@ -6,6 +6,29 @@ const aiConfigStr = process.env.AI_CONFIG;
 const mailConfigStr = process.env.MAIL_CONFIG;
 const recipientEmail = process.env.RECIPIENT_EMAIL;
 const recipientEmails = process.env.RECIPIENT_EMAILS;
+const debugMode = process.env.DEBUG === 'true'; // 添加debug开关
+
+// 安全日志函数 - 隐藏敏感信息
+function safeLog(message, ...args) {
+    if (debugMode) {
+        console.log(message, ...args);
+    } else {
+        // 在非debug模式下，隐藏敏感信息
+        const safeMessage = message.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[邮箱已隐藏]');
+        const safeArgs = args.map(arg => {
+            if (typeof arg === 'string') {
+                return arg.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[邮箱已隐藏]');
+            }
+            return arg;
+        });
+        console.log(safeMessage, ...safeArgs);
+    }
+}
+
+// 进度日志函数 - 始终显示
+function progressLog(message, ...args) {
+    console.log(message, ...args);
+}
 
 // 校验 AI_CONFIG
 if (!aiConfigStr) {
@@ -78,18 +101,26 @@ function processRecipients() {
             process.exit(1);
         }
         
-        console.log(`检测到 ${recipients.length} 个收件人:`, recipients.join(', '));
+        if (debugMode) {
+            safeLog(`检测到 ${recipients.length} 个收件人:`, recipients.join(', '));
+        } else {
+            progressLog(`检测到 ${recipients.length} 个收件人`);
+        }
         return recipients;
     } else {
         // 处理单个收件人
         recipients = recipientEmail.trim();
         
         if (!isValidEmail(recipients)) {
-            console.error('错误：邮箱地址格式无效:', recipients);
+            console.error('错误：邮箱地址格式无效:', debugMode ? recipients : '[邮箱已隐藏]');
             process.exit(1);
         }
         
-        console.log('检测到 1 个收件人:', recipients);
+        if (debugMode) {
+            safeLog('检测到 1 个收件人:', recipients);
+        } else {
+            progressLog('检测到 1 个收件人');
+        }
         return recipients;
     }
 }
@@ -133,7 +164,7 @@ function extractActualContent(rawContent) {
     const htmlCodeBlockMatch = content.match(/```html\s*\n?([\s\S]*?)\n?\s*```/i);
     if (htmlCodeBlockMatch && htmlCodeBlockMatch[1]) {
         const htmlContent = htmlCodeBlockMatch[1].trim();
-        console.log('检测到完整HTML代码块，提取代码块内容');
+        safeLog('检测到完整HTML代码块，提取代码块内容');
         return cleanHtmlContent(htmlContent);
     }
     
@@ -141,7 +172,7 @@ function extractActualContent(rawContent) {
     const htmlStartMatch = content.match(/```html\s*\n?([\s\S]*?)$/i);
     if (htmlStartMatch && htmlStartMatch[1]) {
         let htmlContent = htmlStartMatch[1].trim();
-        console.log('检测到HTML代码块开始标记，提取后续内容');
+        safeLog('检测到HTML代码块开始标记，提取后续内容');
         return cleanHtmlContent(htmlContent);
     }
     
@@ -152,7 +183,7 @@ function extractActualContent(rawContent) {
             let htmlPart = parts[1];
             // 移除结尾的```如果存在
             htmlPart = htmlPart.replace(/```[\s\S]*$/, '').trim();
-            console.log('通过分割```html标记提取内容');
+            safeLog('通过分割```html标记提取内容');
             return cleanHtmlContent(htmlPart);
         }
     }
@@ -161,7 +192,7 @@ function extractActualContent(rawContent) {
     const thinkEndMatch = content.match(/<\/think>\s*([\s\S]*?)$/i);
     if (thinkEndMatch && thinkEndMatch[1]) {
         content = thinkEndMatch[1].trim();
-        console.log('检测到</think>标签，提取标签后内容');
+        safeLog('检测到</think>标签，提取标签后内容');
     }
     
     // 备用方法2: 移除所有thinking相关标签及其内容
@@ -181,7 +212,7 @@ function extractActualContent(rawContent) {
         if (htmlMatch) {
             const htmlStartIndex = content.indexOf(htmlMatch[0]);
             content = content.substring(htmlStartIndex).trim();
-            console.log('检测到思考过程文字，提取HTML部分');
+            safeLog('检测到思考过程文字，提取HTML部分');
         }
     }
     
@@ -294,7 +325,7 @@ async function getInspirationalQuote() {
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-            console.log(`尝试获取AI内容 (第${attempt}次)...`);
+            progressLog(`尝试获取AI内容 (第${attempt}次)...`);
             
             const response = await axios.post(
                 apiUrl,
@@ -355,10 +386,10 @@ async function getInspirationalQuote() {
 
             if (response.data && response.data.choices && response.data.choices.length > 0) {
                 const rawContent = response.data.choices[0].message.content.trim();
-                console.log(`AI返回原始内容: "${rawContent.substring(0, 200)}..."`);
+                safeLog(`AI返回原始内容: "${rawContent.substring(0, 200)}..."`);
                 
                 // 等待3分钟让AI完全生成内容
-                console.log('等待3分钟让AI完全生成内容...');
+                progressLog('等待3分钟让AI完全生成内容...');
                 await new Promise((resolve) => {
                     const timeoutId = setTimeout(() => {
                         resolve();
@@ -370,20 +401,20 @@ async function getInspirationalQuote() {
                         resolve();
                     });
                 });
-                console.log('等待完成，开始解析AI生成的内容...');
+                progressLog('等待完成，开始解析AI生成的内容...');
                 
                 // 提取实际内容（处理thinking标签）
                 const extractedContent = extractActualContent(rawContent);
-                console.log(`提取后的内容: "${extractedContent.substring(0, 200)}..."`);
+                safeLog(`提取后的内容: "${extractedContent.substring(0, 200)}..."`);
                 
                 // 验证内容是否为有效的HTML格式
                 if (isValidHTMLContent(extractedContent)) {
-                    console.log(`内容验证通过，使用AI生成的内容`);
+                    progressLog(`内容验证通过，使用AI生成的内容`);
                     return extractedContent;
                 } else {
-                    console.log(`内容验证失败，不是有效的HTML格式或仍包含思考过程`);
+                    progressLog(`内容验证失败，不是有效的HTML格式或仍包含思考过程`);
                     if (attempt < maxRetries) {
-                        console.log(`将进行第${attempt + 1}次重试...`);
+                        progressLog(`将进行第${attempt + 1}次重试...`);
                         continue;
                     }
                 }
@@ -394,10 +425,14 @@ async function getInspirationalQuote() {
             lastError = error;
             // 更安全的错误信息提取
             const errorMessage = error.response?.data || error.message || '未知错误';
-            console.error(`第${attempt}次尝试失败:`, errorMessage);
+            if (debugMode) {
+                console.error(`第${attempt}次尝试失败:`, errorMessage);
+            } else {
+                console.error(`第${attempt}次尝试失败: [详细错误信息已隐藏]`);
+            }
             
             if (attempt < maxRetries) {
-                console.log(`将进行第${attempt + 1}次重试...`);
+                progressLog(`将进行第${attempt + 1}次重试...`);
                 // 等待1秒后重试，使用更安全的延迟方式
                 await new Promise((resolve) => {
                     const timeoutId = setTimeout(() => {
@@ -414,8 +449,10 @@ async function getInspirationalQuote() {
         }
     }
     
-    console.error('所有重试都失败了，使用备用HTML内容');
-    console.error('最后一次错误:', lastError?.response ? lastError.response.data : lastError?.message);
+    progressLog('所有重试都失败了，使用备用HTML内容');
+    if (debugMode) {
+        console.error('最后一次错误:', lastError?.response ? lastError.response.data : lastError?.message);
+    }
     
     // 在所有重试都失败时返回备用HTML内容
     const fallbackQuotes = [
@@ -520,25 +557,41 @@ async function sendEmail(content) {
     };
 
     try {
-        console.log(`正在发送邮件给 ${recipientCount} 个收件人...`);
+        progressLog(`正在发送邮件给 ${recipientCount} 个收件人...`);
         const info = await transporter.sendMail(mailOptions);
-        console.log(`邮件发送成功! 消息ID: ${info.messageId}`);
-        console.log(`收件人: ${recipientList}`);
+        progressLog(`邮件发送成功! 消息ID: ${debugMode ? info.messageId : '[消息ID已隐藏]'}`);
+        if (debugMode) {
+            safeLog(`收件人: ${recipientList}`);
+        } else {
+            progressLog(`收件人: [已隐藏]`);
+        }
     } catch (error) {
-        console.error('错误：发送邮件失败。', error);
+        if (debugMode) {
+            console.error('错误：发送邮件失败。', error);
+        } else {
+            console.error('错误：发送邮件失败。[详细错误信息已隐藏]');
+        }
         process.exit(1);
     }
 }
 
 async function main() {
     try {
-        console.log('开始执行任务：获取内容并发送邮件...');
+        progressLog('开始执行任务：获取内容并发送邮件...');
         const quote = await getInspirationalQuote();
-        console.log(`获取到的内容: "${quote}"`);
+        if (debugMode) {
+            safeLog(`获取到的内容: "${quote}"`);
+        } else {
+            progressLog('内容获取完成');
+        }
         await sendEmail(quote);
-        console.log('任务完成。');
+        progressLog('任务完成。');
     } catch (error) {
-        console.error('主程序执行失败:', error);
+        if (debugMode) {
+            console.error('主程序执行失败:', error);
+        } else {
+            console.error('主程序执行失败: [详细错误信息已隐藏]');
+        }
         process.exit(1);
     }
 }

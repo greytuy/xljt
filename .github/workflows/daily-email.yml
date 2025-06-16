@@ -46,4 +46,5 @@ jobs:
           AI_CONFIG: ${{ secrets.AI_CONFIG }}
           MAIL_CONFIG: ${{ secrets.MAIL_CONFIG }}
           RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+          DEBUG: 'false' # 设置为 'true' 可显示详细调试信息，包括敏感数据
         run: node send-email.js
