@@ -339,10 +339,10 @@ async function getInspirationalQuote() {
 \`\`\``
                         }
                     ],
-                    max_tokens: 500,
+                    max_tokens: 128000,
                     temperature: 1.0,
-                    // stream: false
-                    stream: true // 启用流式响应
+                 stream: false
+                    // stream: true // 启用流式响应
                 },
                 {
                     headers: {
