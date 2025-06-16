@@ -6,6 +6,7 @@
 
 -   **定时任务**：通过 GitHub Action 的 cron 作业，可以配置在每天的任何特定时间自动执行。
 -   **动态内容**：每次发送的邮件内容都是通过调用 AI 接口动态生成的。
+-   **多收件人支持**：支持同时发送邮件给多个收件人，也兼容单收件人配置。
 -   **安全配置**：所有敏感信息（如 API 密钥、邮箱密码等）都通过 GitHub Secrets 进行管理，确保安全性。
 -   **灵活部署**：只需 Fork 本项目并配置好 Secrets，即可轻松部署。
 
@@ -52,12 +53,23 @@
     *   `sender.email` (可选): 您希望在邮件中显示的**发件人邮箱地址**。如果不设置，将默认使用 `auth.user`。
     *   `sender.name` (可选): 您希望在邮件中显示的**发件人名称**。如果不设置，将默认使用发件人邮箱地址的前缀。
 
--   **`RECIPIENT_EMAIL`**:
-    收件人的电子邮件地址。
+-   **`RECIPIENT_EMAIL`** 或 **`RECIPIENT_EMAILS`**:
+    收件人的电子邮件地址。您可以选择以下两种配置方式之一：
 
+    **单收件人配置（使用 `RECIPIENT_EMAIL`）**：
     ```
     recipient@example.com
     ```
+
+    **多收件人配置（使用 `RECIPIENT_EMAILS`）**：
+    ```
+    recipient1@example.com,recipient2@example.com,recipient3@example.com
+    ```
+
+    > **注意**：
+    > - 如果同时设置了 `RECIPIENT_EMAILS` 和 `RECIPIENT_EMAIL`，系统将优先使用 `RECIPIENT_EMAILS`
+    > - 多个邮箱地址之间用英文逗号分隔，系统会自动去除邮箱地址前后的空格
+    > - 系统会自动验证邮箱地址格式的有效性
 
 
 ### 3. （可选）自定义触发时间
@@ -106,9 +118,20 @@ on:
     }
     ```
 
--   **`RECIPIENT_EMAIL`**:
-    收件人的电子邮件地址。
+-   **`RECIPIENT_EMAIL`** 或 **`RECIPIENT_EMAILS`**:
+    收件人的电子邮件地址。您可以选择以下两种配置方式之一：
 
+    **单收件人配置（使用 `RECIPIENT_EMAIL`）**：
     ```
     recipient@example.com
     ```
+
+    **多收件人配置（使用 `RECIPIENT_EMAILS`）**：
+    ```
+    recipient1@example.com,recipient2@example.com,recipient3@example.com
+    ```
+
+    > **注意**：
+    > - 如果同时设置了 `RECIPIENT_EMAILS` 和 `RECIPIENT_EMAIL`，系统将优先使用 `RECIPIENT_EMAILS`
+    > - 多个邮箱地址之间用英文逗号分隔，系统会自动去除邮箱地址前后的空格
+    > - 系统会自动验证邮箱地址格式的有效性

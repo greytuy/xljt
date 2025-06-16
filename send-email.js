@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer');
 const aiConfigStr = process.env.AI_CONFIG;
 const mailConfigStr = process.env.MAIL_CONFIG;
 const recipientEmail = process.env.RECIPIENT_EMAIL;
+const recipientEmails = process.env.RECIPIENT_EMAILS;
 
 // 校验 AI_CONFIG
 if (!aiConfigStr) {
@@ -26,9 +27,14 @@ if (!apiUrl || !apiKey || !model) {
     process.exit(1);
 }
 
-// 校验 MAIL_CONFIG
-if (!mailConfigStr || !recipientEmail) {
-    console.error('错误：一个或多个必要的环境变量 (MAIL_CONFIG, RECIPIENT_EMAIL) 未设置。');
+// 校验 MAIL_CONFIG 和收件人配置
+if (!mailConfigStr) {
+    console.error('错误：MAIL_CONFIG 环境变量未设置。');
+    process.exit(1);
+}
+
+if (!recipientEmails && !recipientEmail) {
+    console.error('错误：必须设置 RECIPIENT_EMAILS 或 RECIPIENT_EMAIL 环境变量之一。');
     process.exit(1);
 }
 
@@ -38,6 +44,54 @@ try {
 } catch (error) {
     console.error('错误：解析 MAIL_CONFIG JSON 失败。', error);
     process.exit(1);
+}
+
+/**
+ * 验证邮箱地址格式
+ * @param {string} email 邮箱地址
+ * @returns {boolean} 邮箱地址是否有效
+ */
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+/**
+ * 处理和验证收件人邮箱地址
+ * @returns {string|string[]} 返回单个邮箱地址或邮箱地址数组
+ */
+function processRecipients() {
+    let recipients;
+    
+    // 优先使用 RECIPIENT_EMAILS，如果没有则使用 RECIPIENT_EMAIL
+    if (recipientEmails) {
+        // 处理多个收件人
+        recipients = recipientEmails
+            .split(',')
+            .map(email => email.trim())
+            .filter(email => email.length > 0);
+        
+        // 验证所有邮箱地址
+        const invalidEmails = recipients.filter(email => !isValidEmail(email));
+        if (invalidEmails.length > 0) {
+            console.error('错误：以下邮箱地址格式无效:', invalidEmails.join(', '));
+            process.exit(1);
+        }
+        
+        console.log(`检测到 ${recipients.length} 个收件人:`, recipients.join(', '));
+        return recipients;
+    } else {
+        // 处理单个收件人
+        recipients = recipientEmail.trim();
+        
+        if (!isValidEmail(recipients)) {
+            console.error('错误：邮箱地址格式无效:', recipients);
+            process.exit(1);
+        }
+        
+        console.log('检测到 1 个收件人:', recipients);
+        return recipients;
+    }
 }
 
 /**
@@ -302,6 +356,21 @@ async function getInspirationalQuote() {
                 const rawContent = response.data.choices[0].message.content.trim();
                 console.log(`AI返回原始内容: "${rawContent.substring(0, 200)}..."`);
                 
+                // 等待3分钟让AI完全生成内容
+                console.log('等待3分钟让AI完全生成内容...');
+                await new Promise((resolve) => {
+                    const timeoutId = setTimeout(() => {
+                        resolve();
+                    }, 180000); // 3分钟 = 180秒 = 180000毫秒
+                    
+                    // 确保在进程退出时清理定时器
+                    process.once('SIGINT', () => {
+                        clearTimeout(timeoutId);
+                        resolve();
+                    });
+                });
+                console.log('等待完成，开始解析AI生成的内容...');
+                
                 // 提取实际内容（处理thinking标签）
                 const extractedContent = extractActualContent(rawContent);
                 console.log(`提取后的内容: "${extractedContent.substring(0, 200)}..."`);
@@ -397,6 +466,11 @@ async function sendEmail(content) {
         throw new Error('邮件内容不能为空且必须是字符串类型');
     }
 
+    // 处理收件人
+    const recipients = processRecipients();
+    const recipientCount = Array.isArray(recipients) ? recipients.length : 1;
+    const recipientList = Array.isArray(recipients) ? recipients.join(', ') : recipients;
+
     const transporter = nodemailer.createTransport(mailConfig);
 
     // 从 mailConfig 中确定发件人信息，如果未提供 sender，则回退到 auth.user
@@ -439,14 +513,16 @@ async function sendEmail(content) {
 
     const mailOptions = {
         from: `"${fromName}" <${fromEmail}>`,
-        to: recipientEmail,
+        to: recipients,
         subject: '今日份的心灵鸡汤请查收 ✨',
         html: emailHtml
     };
 
     try {
+        console.log(`正在发送邮件给 ${recipientCount} 个收件人...`);
         const info = await transporter.sendMail(mailOptions);
-        console.log('邮件发送成功:', info.messageId);
+        console.log(`邮件发送成功! 消息ID: ${info.messageId}`);
+        console.log(`收件人: ${recipientList}`);
     } catch (error) {
         console.error('错误：发送邮件失败。', error);
         process.exit(1);
