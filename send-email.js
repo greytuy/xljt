@@ -41,6 +41,29 @@ try {
 }
 
 /**
+ * 清理HTML内容，移除代码块标记和其他无关内容
+ * @param {string} htmlContent 原始HTML内容
+ * @returns {string} 清理后的HTML内容
+ */
+function cleanHtmlContent(htmlContent) {
+    if (!htmlContent || typeof htmlContent !== 'string') {
+        return '';
+    }
+    
+    let content = htmlContent.trim();
+    
+    // 移除代码块标记
+    content = content.replace(/^```html\s*/i, '');
+    content = content.replace(/```\s*$/, '');
+    content = content.replace(/^```\s*/m, '');
+    
+    // 移除可能的markdown标记
+    content = content.replace(/^html\s*/i, '');
+    
+    return content.trim();
+}
+
+/**
  * 从AI响应中提取实际内容（处理thinking标签和HTML代码块）
  * @param {string} rawContent AI返回的原始内容
  * @returns {string} 提取后的实际内容
@@ -52,12 +75,32 @@ function extractActualContent(rawContent) {
     
     let content = rawContent.trim();
     
-    // 优先方法：提取```html ```代码块中的内容
-    const htmlCodeBlockMatch = content.match(/```html\s*([\s\S]*?)\s*```/i);
+    // 方法1：提取```html ```代码块中的内容（完整匹配）
+    const htmlCodeBlockMatch = content.match(/```html\s*\n?([\s\S]*?)\n?\s*```/i);
     if (htmlCodeBlockMatch && htmlCodeBlockMatch[1]) {
         const htmlContent = htmlCodeBlockMatch[1].trim();
-        console.log('检测到HTML代码块，提取代码块内容');
-        return htmlContent;
+        console.log('检测到完整HTML代码块，提取代码块内容');
+        return cleanHtmlContent(htmlContent);
+    }
+    
+    // 方法2：如果没有完整的代码块，但有```html开头，提取后面的内容
+    const htmlStartMatch = content.match(/```html\s*\n?([\s\S]*?)$/i);
+    if (htmlStartMatch && htmlStartMatch[1]) {
+        let htmlContent = htmlStartMatch[1].trim();
+        console.log('检测到HTML代码块开始标记，提取后续内容');
+        return cleanHtmlContent(htmlContent);
+    }
+    
+    // 方法3：查找任何```html标记并提取
+    if (content.includes('```html')) {
+        const parts = content.split('```html');
+        if (parts.length > 1) {
+            let htmlPart = parts[1];
+            // 移除结尾的```如果存在
+            htmlPart = htmlPart.replace(/```[\s\S]*$/, '').trim();
+            console.log('通过分割```html标记提取内容');
+            return cleanHtmlContent(htmlPart);
+        }
     }
     
     // 备用方法1: 如果包含</think>标签，提取标签后的内容
@@ -212,7 +255,7 @@ async function getInspirationalQuote() {
                             role: 'user',
                             content: `请生成一段励志的HTML内容，用于每日邮件发送。
 
-你可以在<think></think>标签中思考设计思路，然后在\`\`\`html \`\`\`代码块中输出最终的HTML代码。
+你可以在<think></think>标签中思考设计思路，然后在\`\`\`html代码块中输出最终的HTML代码。
 
 要求：
 1. HTML内容应包含：
@@ -223,14 +266,21 @@ async function getInspirationalQuote() {
 2. 使用温暖的颜色搭配和合理的布局
 3. 确保在邮件客户端中显示良好
 
+**重要格式要求：**
+- 思考过程放在<think></think>标签中
+- HTML代码放在\`\`\`html代码块中
+- 代码块后必须有\`\`\`结尾
+
 格式示例：
 <think>
-你的思考过程...
+设计思路：使用温暖的渐变背景...
 </think>
 
 \`\`\`html
-<div style="...">
-  <!-- 你的HTML内容 -->
+<div style="background: linear-gradient(135deg, #FFA73F 0%, #FFD146 100%); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+    <h3 style="margin: 0 0 15px 0;">今日励志</h3>
+    <p style="font-size: 1.2em; font-weight: bold; margin: 0 0 15px 0;"><strong>励志语句</strong></p>
+    <p style="opacity: 0.9; margin: 0;">解释文字内容...</p>
 </div>
 \`\`\``
                         }
