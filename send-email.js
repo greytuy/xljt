@@ -6,7 +6,7 @@ const aiConfigStr = process.env.AI_CONFIG;
 const mailConfigStr = process.env.MAIL_CONFIG;
 const recipientEmail = process.env.RECIPIENT_EMAIL;
 const recipientEmails = process.env.RECIPIENT_EMAILS;
-const debugMode = process.env.DEBUG === 'false'; // 添加debug开关
+const debugMode = process.env.DEBUG === 'true'; // 添加debug开关
 
 // 安全日志函数（默认静默）。仅在非调试模式下输出已脱敏信息
 function safeLog(message, ...args) {
