@@ -1,0 +1,47 @@
+name: keepalive-commit
+
+on:
+  schedule:
+    - cron: "0 2 * * 1" # 每周一 02:00 UTC 执行
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Create keepalive commit (to dedicated branch)
+        shell: bash
+        run: |
+          set -euo pipefail
+          BRANCH="keepalive"
+          FILE_PATH=".github/keepalive/heartbeat.txt"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # 切换或创建 keepalive 分支（减少对主分支工作流的影响）
+          if git show-ref --verify --quiet "refs/heads/${BRANCH}"; then
+            git switch "${BRANCH}"
+          else
+            git switch -c "${BRANCH}"
+          fi
+
+          mkdir -p "$(dirname "${FILE_PATH}")"
+          # 每次写入不同时间戳，确保确实产生提交
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > "${FILE_PATH}"
+
+          git add "${FILE_PATH}"
+          # 始终提交（即使内容未变化也可使用 --allow-empty）
+          git commit -m "chore(keepalive): update heartbeat" || git commit --allow-empty -m "chore(keepalive): keep heartbeat alive"
+          git push origin "${BRANCH}"
+
+
