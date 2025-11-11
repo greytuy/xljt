@@ -13,7 +13,7 @@ on:
   schedule:
     # cron 表达式使用 UTC 时间。'0 1 * * *' 对应 UTC 时间的 01:00，
     # 即北京时间 (UTC+8) 的早上 9:00。
-    - cron: '0 1 * * *'
+    - cron: '0 23 * * *'
 
 jobs:
   send-daily-email:
