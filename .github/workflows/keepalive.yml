@@ -44,7 +44,8 @@ jobs:
           git commit -m "chore(keepalive): update heartbeat" || git commit --allow-empty -m "chore(keepalive): keep heartbeat alive"
           
           # 在推送前先拉取远程最新变更，避免 non-fast-forward 错误
-          git pull origin "${BRANCH}" --no-edit
+          # 使用 rebase 策略避免 divergent branches 问题
+          git pull origin "${BRANCH}" --rebase
           git push origin "${BRANCH}"
 
 
