@@ -42,6 +42,9 @@ jobs:
           git add "${FILE_PATH}"
           # 始终提交（即使内容未变化也可使用 --allow-empty）
           git commit -m "chore(keepalive): update heartbeat" || git commit --allow-empty -m "chore(keepalive): keep heartbeat alive"
+          
+          # 在推送前先拉取远程最新变更，避免 non-fast-forward 错误
+          git pull origin "${BRANCH}" --no-edit
           git push origin "${BRANCH}"
 
 
