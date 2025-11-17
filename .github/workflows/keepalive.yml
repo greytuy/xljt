@@ -36,6 +36,12 @@ jobs:
           fi
 
           mkdir -p "$(dirname "${FILE_PATH}")"
+          
+          # 检查文件是否已存在，如果存在则先删除再重新创建，避免 add/add 冲突
+          if [ -f "${FILE_PATH}" ]; then
+            git rm -f "${FILE_PATH}"
+          fi
+          
           # 每次写入不同时间戳，确保确实产生提交
           date -u +"%Y-%m-%dT%H:%M:%SZ" > "${FILE_PATH}"
 
@@ -44,8 +50,14 @@ jobs:
           git commit -m "chore(keepalive): update heartbeat" || git commit --allow-empty -m "chore(keepalive): keep heartbeat alive"
           
           # 在推送前先拉取远程最新变更，避免 non-fast-forward 错误
-          # 使用 merge 策略避免 divergent branches 问题
-          git pull origin "${BRANCH}" --no-rebase
+          # 如果拉取失败，说明存在冲突，使用 force push 强制覆盖
+          if ! git pull origin "${BRANCH}" --no-rebase --no-commit; then
+            echo "检测到冲突，使用强制推送覆盖远程分支"
+            git push origin "${BRANCH}" --force
+          else
+            git commit --no-edit -m "chore(keepalive): merge remote changes"
+            git push origin "${BRANCH}"
+          fi
           git push origin "${BRANCH}"
 
 
